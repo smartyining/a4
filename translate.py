@@ -52,6 +52,8 @@ tf.app.flags.DEFINE_float("learning_rate_decay_factor", 0.99,
                           "Learning rate decays by this much.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 5.0,
                           "Clip gradients to this norm.")
+tf.app.flags.DEFINE_float("keep_prob", 0.5,
+                          "Dropout rate.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "Batch size to use during training.")
 tf.app.flags.DEFINE_integer("size", 512, "Size of each model layer.")
@@ -129,6 +131,8 @@ def create_model(session, forward_only):
       FLAGS.batch_size,
       FLAGS.learning_rate,
       FLAGS.learning_rate_decay_factor,
+      FLAGS.keep_prob,
+      use_lstm=False,
       forward_only=forward_only,
       dtype=dtype)
   ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
@@ -199,7 +203,7 @@ def train():
                          step_time, perplexity))
         pep_score[model.global_step.eval()] = {'train': perplexity}
         # Decrease learning rate if no improvement was seen over last 3 times.
-        if len(previous_losses) > 2 and loss > max(previous_losses[-3:]):
+        if current_step % 1500 ==0 or len(previous_losses) > 2 and loss > max(previous_losses[-3:]):
           sess.run(model.learning_rate_decay_op)
         previous_losses.append(loss)
         # Save checkpoint and zero timer and loss.
@@ -236,7 +240,7 @@ def decode():
     en_vocab_path = os.path.join(FLAGS.data_dir,
                                  "vocab%d.en" % FLAGS.en_vocab_size)
     ja_vocab_path = os.path.join(FLAGS.data_dir,
-                                 "vocab%d.fr" % FLAGS.ja_vocab_size)
+                                 "vocab%d.ja" % FLAGS.ja_vocab_size)
     en_vocab, _ = data_utils.initialize_vocabulary(en_vocab_path)
     _, rev_ja_vocab = data_utils.initialize_vocabulary(ja_vocab_path)
 
